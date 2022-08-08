@@ -15,7 +15,7 @@ Even if DaVinci Resolve is running during installation, the change will be refle
 1. Open DaVinci Resolve.
 2. Go to `Fusion` tab, Go to menu bar and click `Fusion/Fusion Settings...`
 3. Create `Path Map Name`: `TTSTools:` `Path Map Value`: (Path to `DaVinciResolve.TTSTools/DaVinciResolve.TTSTools`)
-4. Add `:TTSTools:` to  `UserPaths:`
+4. Add `;TTSTools:` to  `UserPaths:`
 
 ![ScreenShot](PathMapWindow.png)
 
