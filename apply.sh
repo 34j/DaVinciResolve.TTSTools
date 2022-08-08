@@ -1,0 +1,1 @@
+(cd "./DaVinciResolveTTS/" && cp -f -r ./ "C:\ProgramData\Blackmagic Design\DaVinci Resolve\Fusion")
