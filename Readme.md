@@ -29,3 +29,7 @@ After installation, scripts will be added to `Workspace/Scripts/Comp` in the men
 
 - [NUROKU/DavinciResolve\_VoiceAutoTool](https://github.com/NUROKU/DavinciResolve_VoiceAutoTool)
 - [nakano000/Resolve\_Script](https://github.com/nakano000/Resolve_Script)
+
+## For Developers
+
+See [wiki](https://github.com/34j/DaVinciResolve.TTSTools/wiki) for further information.
