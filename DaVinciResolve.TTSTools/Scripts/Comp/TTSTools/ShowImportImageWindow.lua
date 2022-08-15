@@ -4,8 +4,6 @@ local split = require "TTSTools/split"
 local fun = require "TTSTools/fun"
 math.randomseed(os.clock())
 
-local generateImage = {}
-
 ---@class LayerInfo
 ---@field localPath string
 ---@field name string
@@ -59,13 +57,18 @@ local function render(layerInfos, parent, win)
                 cbox:SetCurrentIndex(i)
             end
         elseif layerInfo.name[1] == '!' then
-
         else
+            -- Add checkbox for each layer
             guid = GUID()
             layerInfos[i].GUID = guid
             layerInfos[i].isComboBox = false
             local checkBox = ui:CheckBox { ID = guid, Text = layerInfo.name, Checked = layerInfo.isVisible }
-            parent:AddItem(checkBox)
+            parent:AddItem(checkBox)           
+            win.On[guid].Toggled = function(ev)
+                layerInfo.isVisible = checkBox.Checked
+                render(layerInfos, parent, win)
+                win:RecalcLayout()
+            end
         end
 
         if layerInfo.isGroup and layerInfo.isVisible then
@@ -74,11 +77,20 @@ local function render(layerInfos, parent, win)
             layerInfos[i].children = render(layerInfo.children, group, win)
         end
     end
+    win.On[guid].CurrentIndexChanged = function(ev)
+        for i, layerInfo in ipairs(layerInfos) do
+            if layerInfo.isComboBox then
+                layerInfo.isVisible = cbox.CurrentIndex == i
+            end
+        end
+        render(layerInfos, parent, win)
+        win:RecalcLayout()
+    end
     return layerInfos
 end
 
 local function readLayerInfo(path)
-    local file = io.open(path, "r")
+    local file = assert(io.open(path, "r"))
     local content = file:read("*a")
     file:close()
     local layerInfos = json.decode(content)
@@ -91,21 +103,34 @@ local function showWindow()
     local win = disp:AddWindow({
         ID = "Dialog",
         WindowTitle = "Generate Comp",
-        ui:HGroup {
-            ui:LineEdit { ID = "Path", },
+        ui:VGroup {
             ui:HGroup {
+                ui:LineEdit { ID = "Path", },
+                ui:Button { ID = "Browse", Text = "Browse" },
+            },
+            ui:VGroup {
                 ID = "Group"
             }
         }
     })
     local winItems = win:GetItems()
     local group = winItems.Group
-    function win.On.Path.Modified(ev)
+
+    function win.On.Browse.Clicked(ev)
+        local path = fu:RequestDir()
+        if path then
+            winItems.Path.Text = path
+        end
+    end
+
+    function win.On.Path.TextChanged(ev)
         for i, child in ipairs(group:GetChildren()) do
             group:RemoveChild(child)
         end
         local folderPath = winItems.Path.Text
-        local layerInfos = readLayerInfo(folderPath .. '/' .. fun.tail(split.path(folderPath)) .. '.json')
+        local jsonPath = folderPath .. '/' .. split.path(folderPath)[#split.path(folderPath)] .. '.json'
+        local layerInfos = readLayerInfo(jsonPath)
+        group:AddItem(render(layerInfos, group, win))
     end
 
     function win.On.Dialog.Close(ev)
@@ -117,22 +142,4 @@ local function showWindow()
     win:Hide()
 end
 
-
-
-local function generateComp(imagePaths)
-
-end
-
-function generateImage.init(node, folderPath)
-    
-end
-
-function generateImage.createComp()
-
-end
-
-function generateImage.updateComp(timelienItem)
-
-end
-
-return generateImage
+showWindow()

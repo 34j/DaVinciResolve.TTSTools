@@ -1,3 +1,5 @@
+local fun = require "TTSTools.fun"
+
 local split = {}
 ---split string
 ---@param str string
@@ -37,7 +39,7 @@ function split.path(str)
         error("str is nil.")
     end
     str = str:gsub("\\", "/")
-    return split.split(str, "/")
+    return fun.filter(function (x) return x == '' end, split.split(str, "/"))
 end
 
 return split
