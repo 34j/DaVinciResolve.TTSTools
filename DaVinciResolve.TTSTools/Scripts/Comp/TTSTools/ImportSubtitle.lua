@@ -85,7 +85,7 @@ end
 
 ---comment
 ---@param trackType trackType track type
----@return number #selected track number
+---@return number|nil #selected track number
 local function SelectTrack(timeline, trackType)
     local n_tracks = timeline:GetTrackCount(trackType)
     local selection = 1

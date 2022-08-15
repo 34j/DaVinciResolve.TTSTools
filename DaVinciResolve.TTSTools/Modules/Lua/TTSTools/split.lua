@@ -32,4 +32,12 @@ function split.splitLines(str)
     return split.split(str, "\n")
 end
 
+function split.path(str)
+    if str == nil then
+        error("str is nil.")
+    end
+    str = str:gsub("\\", "/")
+    return split.split(str, "/")
+end
+
 return split
