@@ -39,7 +39,7 @@ function split.path(str)
         error("str is nil.")
     end
     str = str:gsub("\\", "/")
-    return fun.filter(function (x) return x == '' end, split.split(str, "/"))
+    return fun.totable(fun.filter(function (x) return x ~= '' end, split.split(str, "/")))
 end
 
 return split
