@@ -2,6 +2,14 @@
 
 A set of tools for making videos using TTS that come with characters in DaVinci Resolve. Ready for VOICEROID / A.I.VOICE / VOICEVOX.
 
+## Features
+
+Currently this project is under development.
+
+- [x] Import voices to a single track
+- [x] Import subtitles to multiple tracks by speaker
+- [ ] Generate Fusion Composition from PSD files (WIP)
+
 ## Requirements
 
 Windows Only.
