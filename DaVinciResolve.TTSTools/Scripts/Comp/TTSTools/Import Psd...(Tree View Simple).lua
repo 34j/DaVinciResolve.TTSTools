@@ -3,6 +3,8 @@ local json = require "TTSTools/json"
 local split = require "TTSTools/split"
 local fun = require "TTSTools/fun"
 local UTF8toSJISNext = require "TTSTools/UTF8toSJISNext"
+local folders = require "TTSTools/folders"
+local guid = require "TTSTools/guid"
 
 local ui = fu.UIManager
 
@@ -42,7 +44,8 @@ local function generateImage(layerInfo, folderPath)
     local imagePaths = getVisibleLayerPaths(layerInfo, {})
 
     -- Calling multiple commands at once not working, so we use absolute paths.
-    local outFileName = UTF8toSJISNext:Convert(folderPath .. '/' .. "temp.png")
+    local outFileNameUTF8 = folderPath .. '/' .. guid.randomString(12) .. ".png"
+    local outFileName = UTF8toSJISNext:Convert(outFileNameUTF8)
     for i = 1, #imagePaths do
         imagePaths[i] = UTF8toSJISNext:Convert(folderPath .. '/' .. imagePaths[i])
     end
@@ -52,10 +55,9 @@ local function generateImage(layerInfo, folderPath)
         table.concat(imagePaths, ' ') .. ' -background None -layers Flatten ' .. outFileName
     -- local command = '"' .. 'cd ' .. folderPath .. ' & ' .. magickCommand .. '"'
     -- local command2 = 'start /d "' .. folderPath .. '" '.. magickCommand
-    print(magickCommand)
     -- Call it
     print(execr(magickCommand))
-    print('Done')
+    return outFileNameUTF8
 end
 
 ---comment
@@ -130,6 +132,10 @@ end
 local function showWindow()
     local disp = bmd.UIDispatcher(ui)
     local layerInfo = nil
+    local projectManager = resolve:GetProjectManager()
+    local project = projectManager:GetCurrentProject()
+    local mediaPool = project:GetMediaPool()
+
     local win = disp:AddWindow({
         ID = "Dialog",
         WindowTitle = "Generate Comp",
@@ -170,7 +176,12 @@ local function showWindow()
 
     function win.On.Generate.Clicked(ev)
         if layerInfo then
-            generateImage(layerInfo, formatFolderPath(winItems.Path.Text))
+            local imagePath = generateImage(layerInfo, formatFolderPath(winItems.Path.Text))
+            print(imagePath)
+            local folder = folders.GetOrCreateFolder(mediaPool, "TTSTools/Png")
+            mediaPool:SetCurrentFolder(folder)
+            local poolItem = mediaPool:ImportMedia(imagePath)
+            mediaPool:AppendToTimeline(poolItem)
         end
     end
 
