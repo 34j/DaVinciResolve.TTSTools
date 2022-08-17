@@ -30,15 +30,38 @@ local function getVisibleLayerPaths(layerInfo, paths)
     return paths
 end
 
-local function generateComp(layerInfo)
-    fun.each(print, getVisibleLayerPaths(layerInfo, {}))
+local function execr(cmd)
+    local f = assert(io.popen(cmd))
+    local data = f:read('*a')
+    f:close()
+    return data
 end
 
+local function generateImage(layerInfo, folderPath)
+    print('Generating image for ' .. folderPath)
+    local imagePaths = getVisibleLayerPaths(layerInfo, {})
+
+    -- Calling multiple commands at once not working, so we use absolute paths.
+    local outFileName = UTF8toSJISNext:Convert(folderPath .. '/' .. "temp.png")
+    for i = 1, #imagePaths do
+        imagePaths[i] = UTF8toSJISNext:Convert(folderPath .. '/' .. imagePaths[i])
+    end
+
+    -- Create commands
+    local magickCommand = 'magick ' ..
+        table.concat(imagePaths, ' ') .. ' -background None -layers Flatten ' .. outFileName
+    -- local command = '"' .. 'cd ' .. folderPath .. ' & ' .. magickCommand .. '"'
+    -- local command2 = 'start /d "' .. folderPath .. '" '.. magickCommand
+    print(magickCommand)
+    -- Call it
+    print(execr(magickCommand))
+    print('Done')
+end
 
 ---comment
 ---@param layerInfos LayerInfo[]
 ---@param parentTreeItem TreeView
-local function AddChildren(layerInfos, parentTreeItem, tree)
+local function addChildTreeItems(layerInfos, parentTreeItem, tree)
     for i, layerInfo in ipairs(layerInfos) do
         local treeItem = tree:NewItem()
         treeItem.Flags = {
@@ -52,36 +75,46 @@ local function AddChildren(layerInfos, parentTreeItem, tree)
         parentTreeItem:AddChild(treeItem)
 
         if layerInfo.isGroup then
-            AddChildren(layerInfo.children, treeItem, tree)
+            addChildTreeItems(layerInfo.children, treeItem, tree)
         end
     end
 end
 
 ---comment
 ---@param layerInfos LayerInfo[]
-local function UpdateLayerInfo(layerInfos, parentTreeItem)
+local function updateLayerInfo(layerInfos, parentTreeItem)
     for i, layerInfo in ipairs(layerInfos) do
         local treeItem = parentTreeItem:Child(i - 1)
         assert(treeItem.Text[0] == layerInfo.name, treeItem.Text[0] .. " != " .. layerInfo.name)
         layerInfos[i].isVisible = treeItem.CheckState[0] == "Checked"
         if layerInfo.isGroup then
-            layerInfos[i].children = UpdateLayerInfo(layerInfos[i].children, treeItem)
+            layerInfos[i].children = updateLayerInfo(layerInfos[i].children, treeItem)
         end
     end
     return layerInfos
 end
 
+---comment
+---@param folderPath string
+local function formatFolderPath(folderPath)
+    folderPath = folderPath:gsub("\\", "/")
+    if folderPath:sub(#folderPath) == '/' then
+        folderPath = folderPath:sub(1, #folderPath - 1)
+    end
+    return folderPath
+end
+
 ---@param layerInfo LayerInfo
-local function GenerateTree(layerInfo, tree, win)
+local function populateTree(layerInfo, tree, win)
     local rootTreeItem = tree:NewItem()
     rootTreeItem.Text[0] = "Root"
     tree:AddTopLevelItem(rootTreeItem)
 
-    AddChildren(layerInfo.children, rootTreeItem, tree)
+    addChildTreeItems(layerInfo.children, rootTreeItem, tree)
 
     function win.On.Tree.ItemChanged(ev)
         if ev.item then
-            layerInfo.children = UpdateLayerInfo(layerInfo.children, rootTreeItem)
+            layerInfo.children = updateLayerInfo(layerInfo.children, rootTreeItem)
         end
     end
 end
@@ -106,7 +139,7 @@ local function showWindow()
                 ui:LineEdit { ID = "Path", },
                 ui:Button { ID = "Browse", Text = "Browse" },
             },
-            ui:HGroup{
+            ui:HGroup {
                 Weight = 0,
                 ui:Button { ID = "Generate", Text = "Generate" },
             },
@@ -128,20 +161,16 @@ local function showWindow()
     end
 
     function win.On.Path.TextChanged(ev)
-        local folderPath = winItems.Path.Text ---@type string
-        folderPath = folderPath:gsub("\\", "/")
-        if folderPath[#folderPath] == '/' then
-            folderPath = folderPath:sub(1, #folderPath - 1)
-        end
+        local folderPath = formatFolderPath(winItems.Path.Text) ---@type string
         local jsonPath = folderPath .. '/' .. split.path(folderPath)[#split.path(folderPath)] .. '.json'
         jsonPath = assert(UTF8toSJISNext:Convert(jsonPath))
         layerInfo = readLayerInfo(jsonPath)
-        GenerateTree(layerInfo, winItems.Tree, win)
+        populateTree(layerInfo, winItems.Tree, win)
     end
 
     function win.On.Generate.Clicked(ev)
         if layerInfo then
-            generateComp(layerInfo)
+            generateImage(layerInfo, formatFolderPath(winItems.Path.Text))
         end
     end
 
